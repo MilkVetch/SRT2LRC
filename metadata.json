@@ -1,0 +1,5 @@
+{
+  "name": "SRT to LRC Converter",
+  "description": "A simple tool to convert SRT subtitle files into LRC format for music players.",
+  "requestFramePermissions": []
+}
