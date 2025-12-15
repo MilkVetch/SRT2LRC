@@ -8,7 +8,7 @@ import {
   Trash2,
   FileText,
   Music,
-  Save
+  AlignLeft
 } from 'lucide-react';
 import { convertSrtToLrc } from '../utils/parser';
 
@@ -17,9 +17,9 @@ const Converter: React.FC = () => {
   const [output, setOutput] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   
-  // Download configuration state
+  // Download configuration state - Default to .txt as requested
   const [baseName, setBaseName] = useState<string>('lyrics');
-  const [extension, setExtension] = useState<'lrc' | 'txt'>('lrc');
+  const [extension, setExtension] = useState<'lrc' | 'txt'>('txt');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +91,28 @@ const Converter: React.FC = () => {
     document.body.removeChild(element);
   };
 
+  const downloadPureLyrics = () => {
+    if (!output) return;
+
+    // Remove timestamps [mm:ss.xxx] from the beginning of lines
+    const pureLyrics = output.replace(/^\[\d{2}:\d{2}\.\d{2,3}\]/gm, '');
+
+    let finalName = baseName.trim();
+    if (!finalName) {
+      finalName = prompt("Please enter a filename:", "lyrics") || "lyrics";
+      setBaseName(finalName);
+    }
+
+    const element = document.createElement("a");
+    const file = new Blob([pureLyrics], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    // Force .txt for pure lyrics
+    element.download = `${finalName}_pure.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   const clearAll = () => {
     setInput('');
     setBaseName('lyrics');
@@ -135,8 +157,8 @@ const Converter: React.FC = () => {
         </div>
 
         {/* Right Side: Download Settings */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-2 w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-lg p-1">
+        <div className="flex flex-col xl:flex-row items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full xl:w-auto bg-slate-50 border border-slate-200 rounded-lg p-1">
              <div className="relative flex-grow">
                <input 
                   type="text" 
@@ -152,26 +174,38 @@ const Converter: React.FC = () => {
                 onChange={(e) => setExtension(e.target.value as 'lrc' | 'txt')}
                 className="bg-transparent border-none text-sm px-2 py-1.5 font-medium text-slate-600 focus:outline-none cursor-pointer hover:text-indigo-600"
              >
-                <option value="lrc">.lrc</option>
                 <option value="txt">.txt</option>
+                <option value="lrc">.lrc</option>
              </select>
           </div>
 
-          <button
-            onClick={downloadFile}
-            disabled={!output}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-          >
-            <Download className="w-4 h-4" />
-            Download
-          </button>
+          <div className="flex items-center gap-2 w-full xl:w-auto">
+            <button
+              onClick={downloadPureLyrics}
+              disabled={!output}
+              className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
+              title="Download lyrics without timestamps"
+            >
+              <AlignLeft className="w-4 h-4" />
+              No Time
+            </button>
+
+            <button
+              onClick={downloadFile}
+              disabled={!output}
+              className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Editor Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-280px)] min-h-[500px]">
+      <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-280px)] min-h-[500px]">
         {/* Input Column */}
-        <div className="flex flex-col h-full">
+        <div className="flex-1 flex flex-col h-full">
           <div className="flex items-center justify-between mb-2 px-1">
              <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                <FileText className="w-4 h-4" />
@@ -201,13 +235,13 @@ const Converter: React.FC = () => {
           </div>
         </div>
 
-        {/* Arrow (Visible on desktop) */}
-        <div className="hidden lg:flex flex-col justify-center items-center text-slate-300">
+        {/* Arrow (Visible on desktop/tablet) */}
+        <div className="hidden md:flex flex-col justify-center items-center text-slate-300">
            <ArrowRight className="w-8 h-8" />
         </div>
 
         {/* Output Column */}
-        <div className="flex flex-col h-full">
+        <div className="flex-1 flex flex-col h-full">
           <div className="flex items-center justify-between mb-2 px-1">
              <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                <Music className="w-4 h-4" />
@@ -228,10 +262,10 @@ const Converter: React.FC = () => {
           </div>
           <div className="relative flex-grow">
             <textarea
-              className="w-full h-full p-4 rounded-xl border border-slate-200 bg-slate-50 font-mono text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none shadow-inner text-slate-600"
-              readOnly
-              placeholder="Converted lyrics will appear here..."
+              className="w-full h-full p-4 rounded-xl border border-slate-200 bg-white font-mono text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none transition-shadow shadow-sm"
+              placeholder="Converted lyrics will appear here. You can also edit them manually."
               value={output}
+              onChange={(e) => setOutput(e.target.value)}
             />
           </div>
         </div>
